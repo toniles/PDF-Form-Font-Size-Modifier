@@ -1,14 +1,28 @@
-# PDF Form Font Size Modifier
+import fitz
+from pathlib import Path
 
-A Python script that updates the font size of all non-signature form fields in PDF files.  
-It processes all PDFs in the current folder and outputs modified versions into a `modified_pdfs` subfolder.
+NEW_FONT_SIZE = 12  
+# NEW_FONT_NAME = "TiRo"  #descomenta para cambiar la fuente
 
-## Requirements
+input_dir = Path.cwd()
+# Directorio de salida para PDFs modificados
+output_dir = input_dir / "modified_pdfs"
+output_dir.mkdir(exist_ok=True)
 
-- Python 3.7+
-- [PyMuPDF](https://pymupdf.readthedocs.io/) (`pip install pymupdf`)
+for pdf_file in input_dir.glob("*.pdf"):
+    doc = fitz.open(pdf_file)
+    for page in doc:
+        for widget in page.widgets(): 
+            # Omitir campos de firma
+            if widget.field_type_string == "Signature":
+                continue
 
-## Usage
+            if hasattr(widget, "text_fontsize"):
+                widget.text_fontsize = NEW_FONT_SIZE
+                # widget.text_font = NEW_FONT_NAME  #descomenta para cambiar la fuente
+                widget.update()
 
-```cmd
-py m.py
+    out_file = output_dir / f"{pdf_file.stem}_modified.pdf"
+    doc.save(out_file)
+    doc.close()
+    print(f"Procesado: {pdf_file.name} -> {out_file.name}")
